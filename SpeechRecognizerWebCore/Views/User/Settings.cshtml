@@ -1,0 +1,199 @@
+﻿@model SettingsViewModel
+<h1>Настройки профиля</h1>
+
+<form asp-action="Settings" method="post" class="col-8">
+    <input asp-for="Id" type="hidden" />
+    <div class="form-group">
+        <label asp-for="Login"></label>
+        <input asp-for="Login" type="text" class="form-control" />
+        <span asp-validation-for="Login"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Password"></label>
+        <input asp-for="Password" type="password" class="form-control" />
+        <span asp-validation-for="Password"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+</form>
+<h4 class="mt-4 mb-3">Голосовая аутентификация</h4>
+@if (Model.MicrosoftSpeekerIdentificationProfileId == null)
+{
+    <button class="btn btn-secondary add-microsoft-speeker-identification-profile">Добавить профиль голосовой аутенитфикации</button>
+}
+else
+{
+    <button class="btn btn-secondary delete-microsoft-speeker-identification-profile">Удалить профиль голосовой аутенитфикации</button>
+    <div>
+        <span>ProfileId: @Model.MicrosoftSpeekerIdentificationProfileId</span>
+        @if (Model.RemainingSpeechTime == 0)
+        {
+            <span class="text-success">Обучение завершено</span>
+        }
+        else
+        {
+            <span class="text-danger">Осталось провести обучение на @Model.RemainingSpeechTime секунд(-у)</span>
+            <div>
+                <button class="btn border shadow btn-record btn-record-audio"></button>
+                <span>Начать обучение</span>
+            </div>
+        }
+    </div>
+}
+
+<h4 class="mt-5 mb-3">Аутентификация по фото лица</h4>
+@if (Model.MicrosoftFaceIdentificationProfileId == null)
+{
+    <button class="btn btn-secondary add-microsoft-face-identification-profile">Добавить профиль аутенитфикации по фото лица</button>
+}
+else
+{
+    <button class="btn btn-secondary delete-microsoft-face-identification-profile">Удалить профиль аутенитфикации по фото лица</button>
+    <div>
+        <span>ProfileId: @Model.MicrosoftFaceIdentificationProfileId</span>
+        <div>
+
+            <div class="row mt-3">
+                @foreach (var item in Model.Faces)
+                {
+                    <span class="col-2 face-container" data-faceid="@item.FaceId">
+                        <a href="#" data-id="@item.FaceId" class="remove-face" style="position: absolute; top: -17px; right:-3px">x</a>
+                        <img src="@item.Src" style="width: 100%" />
+                    </span>
+                }
+            </div>
+            <button class="btn border shadow btn-record btn-record-video"></button>
+            <span>Добавить фото лица для входа</span>
+            @section InBodyBeforeContainer{
+                <video id="video" width="333" height="250" autoplay style="position: absolute; left: 0; bottom: 0"></video>
+                <canvas id="canvas" width="333" height="250" style="display:none"></canvas>
+            }
+        </div>
+    </div>
+}
+
+
+@section Scripts{
+    <script src="~/js/inline-worker.js"></script>
+    <script src="~/js/recorder.js"></script>
+    <script src="~/js/videoRecorder.js"></script>
+    <script>
+        $(function () {
+            var audioRecorder;
+            $(".btn-record-audio").click(function () {
+                var btn = $(this);
+                btn.toggleClass("recording");
+
+                if (btn.hasClass("recording")) {
+                    if (!audioRecorder)
+                        audioRecorder = new Recorder();
+
+                    audioRecorder && audioRecorder.record();
+                } else {
+                    audioRecorder && audioRecorder.stop();
+                    audioRecorder.exportWAV(function (blob) {
+                        var xhr = new XMLHttpRequest();
+                        xhr.onload = function (e) {
+                            if (e.target.status === 200) {
+                                var data = JSON.parse(e.target.responseText);
+                                if (data.success)
+                                    location.reload();
+                                else if (data.message)
+                                    alert(data.message);
+                            }
+                        };
+                        var fd = new FormData();
+                        fd.append("enrollmentSample", blob, new Date().toISOString());
+                        xhr.open("POST", "/User/UploadMicrosoftSpeekerIdentificationEnrollmentSample", true);
+                        xhr.send(fd);
+                    });
+                }
+            });
+
+            var video;
+            $(".btn-record-video").click(function () {
+                var btn = $(this);
+                btn.toggleClass("recording");
+
+                if (btn.hasClass("recording")) {
+                    if (!video)
+                        video = new videoRecorder({ outputElement: $("#video")[0], snapshotCanvas: $("#canvas")[0] });
+
+                    video && video.record();
+                } else {
+                    video.takeSnapshot().then(function (blob) {
+                        video.stop();
+                        var xhr = new XMLHttpRequest();
+                        xhr.onload = function (e) {
+                            if (e.target.status === 200) {
+                                var data = JSON.parse(e.target.responseText);
+                                if (data.success)
+                                    location.reload();
+                                else if (data.message)
+                                    alert(data.message);
+                            }
+                        };
+                        var fd = new FormData();
+                        fd.append("photo", blob, new Date().toISOString());
+                        xhr.open("POST", "/User/AddMicrosoftFaceIdentificationPersonFace", true);
+                        xhr.send(fd);
+                    });
+                }
+            });
+
+            $(".add-microsoft-speeker-identification-profile").click(function () {
+                $.post("/User/AddMicrosoftSpeekerIdentificationProfile",
+                    function (result) {
+                        if (result.success) {
+                            location.reload();
+                        } else if (result.message)
+                            alert(result.message);
+                    });
+            });
+
+            $(".delete-microsoft-speeker-identification-profile").click(function () {
+                $.post("/User/DeleteMicrosoftSpeekerIdentificationProfile",
+                    function (result) {
+                        if (result.success) {
+                            location.reload();
+                        } else if (result.message)
+                            alert(result.message);
+                    });
+            });
+
+            $(".add-microsoft-face-identification-profile").click(function () {
+                $.post("/User/AddMicrosoftFaceIdentificationPerson",
+                    function (result) {
+                        if (result.success) {
+                            location.reload();
+                        } else if (result.message)
+                            alert(result.message);
+                    });
+            });
+
+            $(".delete-microsoft-face-identification-profile").click(function () {
+                $.post("/User/DeleteMicrosoftFaceIdentificationPerson",
+                    function (result) {
+                        if (result.success) {
+                            location.reload();
+                        } else if (result.message)
+                            alert(result.message);
+                    });
+            });
+
+            $(".remove-face").click(function () {
+                var me = $(this);
+                var faceId = me.data("id");
+                $.post("/User/DeleteMicrosoftFaceIdentificationPersonFace",
+                    { photoId: faceId },
+                    function (result) {
+                        if (result.success) {
+                            $(".face-container[data-faceid=" + faceId + "]").remove();
+                        }
+                    });
+            });
+        });
+    </script>
+
+}

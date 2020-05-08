@@ -1,0 +1,62 @@
+﻿<h3>Lightpoint слушает сообщения в одном из следующих форматов</h3>
+<h4>«Lightpoint, забронируй мне отпуск»</h4>
+<h4>«Lightpoint, забронируй мне отпуск с {даты начала} по {дату окончания}»</h4>
+
+<div class="text-center">
+    <button class="btn border shadow btn-record btn-record-audio"></button>
+</div>
+
+@section Scripts
+{
+    <script src="/js/commandRecognizer.js"></script>
+    
+    <script src="js/webkitSpeechRecognition.js"></script>
+
+    <script>
+        commandRecognizer.addCommandListener(
+            ["light point забронируй мне отпуск"],
+            false,
+            function(commandStr, grammar) {
+                var dateStart, dateEnd;
+                if (commandStr !== grammar) {
+                    var startIndex = grammar.length;
+                    var indexOfFrom = commandStr.indexOf(" с ", startIndex);
+                    var indexOfTo = commandStr.indexOf(" по ", indexOfFrom > startIndex ? indexOfFrom : startIndex);
+
+                    if (indexOfFrom !== -1) {
+                        var dateStartStr = commandStr.substr(indexOfFrom + 3,
+                            (indexOfTo !== -1 ? indexOfTo : commandStr.length) - indexOfFrom - 3);
+                        dateStart = stringToDate(dateStartStr);
+                    }
+                    if (indexOfTo !== -1) {
+                        var dateEndStr = commandStr.substr(indexOfTo + 4, commandStr.length - indexOfTo - 4);
+                        dateEnd = stringToDate(dateEndStr);
+                    }
+                }
+
+                var url = "/Home/EnterVacation";
+
+                if (dateStart)
+                    url = addParamToUrl(url, "dateStart", dateStart);
+
+                if (dateEnd)
+                    url = addParamToUrl(url, "dateEnd", dateEnd);
+
+                window.location = url;
+            });
+
+        var recorder;
+        $(".btn-record").click(function() {
+            var btn = $(this);
+            btn.toggleClass("recording");
+
+            if (btn.hasClass("recording")) {
+                if (!recorder)
+                    recorder = new chromeSpeechRecognititon({endOfCommandTimeoutCallbacks: [commandRecognizer.recognize]});
+
+                recorder && recorder.start();
+            } else
+                recorder && recorder.stop();
+        });
+    </script>
+}

@@ -1,0 +1,112 @@
+﻿@using Microsoft.Extensions.Configuration
+@model LoginViewModel
+@inject IConfiguration Configuration
+<div class="row justify-content-center">
+    <form asp-action="Login" method="post" class="col-4">
+        <div class="form-group">
+            <label asp-for="Login"></label>
+            <input asp-for="Login" type="text" class="form-control" />
+            <span asp-validation-for="Login"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Password"></label>
+            <input asp-for="Password" type="password" class="form-control" />
+            <span asp-validation-for="Password"></span>
+        </div>
+        <button type="submit" class="btn btn-primary">Войти</button>
+    </form>
+
+    <div class="w-100"></div>
+    <div class="col-4 mt-3">
+        <button class="btn border shadow btn-record btn-record-audio"></button>
+        <span>Голосовой вход</span>
+    </div>
+
+    <div class="w-100"></div>
+    <div class="col-4 mt-3 face-login-block" style="@(Configuration.GetValue<bool>("TwoFactorAuthenticationEnabled") ? "display: none" : "")">
+        <button class="btn border shadow btn-record btn-record-video"></button>
+        <span>Вход по фото лица</span>
+        @section InBodyBeforeContainer{
+            <video id="video" width="333" height="250" autoplay style="position: absolute; left: 0; bottom: 0"></video>
+            <canvas id="canvas" width="333" height="250" style="display:none"></canvas>
+        }
+    </div>
+
+</div>
+
+@section Scripts{
+    <script src="~/js/inline-worker.js"></script>
+    <script src="~/js/recorder.js"></script>
+    <script src="~/js/videoRecorder.js"></script>
+    <script>
+        $(function () {
+            var recorder;
+            $(".btn-record-audio").click(function () {
+                var btn = $(this);
+                btn.toggleClass("recording");
+
+                if (btn.hasClass("recording")) {
+                    if (!recorder)
+                        recorder = new Recorder();
+
+                    recorder && recorder.record();
+                } else {
+                    recorder && recorder.stop();
+                    recorder.exportWAV(function (blob) {
+                        var xhr = new XMLHttpRequest();
+                        xhr.onload = function (e) {
+                            if (e.target.status === 200) {
+                                var data = JSON.parse(e.target.responseText);
+                                if (data.redirect)
+                                    window.location = data.redirect;
+                                else if (data.twoFactor === "face") {
+                                    alert(
+                                        "Уровень распознавания голоса недостаточно высокий. Пройдите аутентификацию по фото лица для дополнительной првоерки.");
+                                    $(".face-login-block").show();
+                                } else if (data.message)
+                                    alert(data.message);
+                            }
+                        };
+                        var fd = new FormData();
+                        fd.append("sample", blob, new Date().toISOString());
+                        xhr.open("POST", "/User/SpeechLogin", true);
+                        xhr.send(fd);
+                    });
+                }
+            });
+
+            var video;
+            $(".btn-record-video").click(function () {
+                var btn = $(this);
+                btn.toggleClass("recording");
+
+                if (btn.hasClass("recording")) {
+                    if (!video)
+                        video = new videoRecorder({ outputElement: $("#video")[0], snapshotCanvas: $("#canvas")[0] });
+
+                    video && video.record();
+                } else {
+                    video.takeSnapshot().then(function (blob) {
+                        video.stop();
+                        var xhr = new XMLHttpRequest();
+                        xhr.onload = function (e) {
+                            if (e.target.status === 200) {
+                                var data = JSON.parse(e.target.responseText);
+                                if (data.redirect)
+                                    window.location = data.redirect;
+                                else if (data.message)
+                                    alert(data.message);
+                            }
+                        };
+                        var fd = new FormData();
+                        fd.append("photo", blob, new Date().toISOString());
+                        xhr.open("POST", "/User/FaceLogin", true);
+                        xhr.send(fd);
+                    });
+
+                }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,30 @@
+﻿@model HeaderViewModel
+    <div id="header" class="row align-items-center">
+    @if (Model.UserIsAuthenticated)
+    {
+        <div class="col-auto d-none d-sm-block offset-6">
+            <a asp-action="Settings" asp-controller="User" class="nounderline"> 
+                <img src="/images/user.png" alt="" style="height:32px" /> Привет, @Model.UserName
+            </a>
+        </div>
+        <div class="col-auto">
+            <a class="logout btn btn-secondary btn-sm" asp-action="Logout" asp-controller="User">Выйти</a>
+        </div>
+    }
+    else
+    {
+        <div class="col-auto offset-8">
+            <a class="login btn btn-secondary btn-sm" asp-action="Login" asp-controller="User">Войти</a>
+        </div>
+
+        <div class="col-auto">
+            <a class="register btn btn-secondary btn-sm" asp-action="Register" asp-controller="User">Зарегистрироваться</a>
+        </div>
+    }
+    </div>
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/header.css" />
+</environment>
+<environment exclude="Development">
+    <link rel="stylesheet" href="~/css/header.min.css" asp-append-version="true" />
+</environment>

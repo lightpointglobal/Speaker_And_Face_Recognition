@@ -1,0 +1,68 @@
+﻿/* Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification\ 
+for details on configuring this project to bundle and minify static web assets. */
+body {
+    padding-bottom: 20px;
+}
+
+/* Wrapping element */
+/* Set some basic padding to keep content from hitting the edges */
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Carousel */
+.carousel-caption p {
+    font-size: 20px;
+    line-height: 1.4;
+}
+
+/* Make .svg files in the carousel display properly in older browsers */
+.carousel-inner .item img[src$=".svg"] {
+    width: 100%;
+}
+
+/* QR code generator */
+#qrCode {
+    margin: 15px;
+}
+
+/* Hide/rearrange for smaller screens */
+@media screen and (max-width: 767px) {
+    /* Hide captions */
+    .carousel-caption {
+        display: none;
+    }
+}
+
+.btn-record {
+    width: 50px;
+    height: 50px;
+    background-size: 40px;
+    background-repeat: no-repeat;
+    border-radius: 50%;
+    background-position: 5px;
+    margin: 5px;
+}
+.btn-record-audio {
+    background-image: url(../images/record-voice-microphone-button-icon.svg);
+}
+.btn-record-video {
+    background-image: url(../images/record-video-button-icon.svg);
+}
+.btn-record.recording {
+    background-image: url(../images/stop-recording-press-the-stop-button-red.png) !important;
+}
+
+.flatpickr-input+.input {
+    background-color: white;
+}
+
+.input-validation-error {
+    border-color: #a94442 !important;
+    background-color: #ffe7e6 !important;
+}
+
+.nounderline {
+    text-decoration: none !important
+}

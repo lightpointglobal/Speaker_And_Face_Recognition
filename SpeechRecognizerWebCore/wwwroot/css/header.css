@@ -1,0 +1,13 @@
+﻿#header{
+    padding:5px 0;
+    height:53px;
+}
+.logout, .login{
+    min-width:46px;
+}
+.logout {
+    min-width: 46px;
+}
+.register {
+    min-width: 56px;
+}

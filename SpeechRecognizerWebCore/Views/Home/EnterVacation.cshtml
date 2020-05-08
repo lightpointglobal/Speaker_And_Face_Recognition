@@ -1,0 +1,75 @@
+﻿@model VacationViewModel
+@if (ViewBag.Success == 1)
+{
+    <h3 class="text-success">Отпуск сохранен</h3>
+}
+else
+{
+    <form id="vocation-form" asp-action="EnterVacation" asp-controller="Home" class="center-block" style="width: 400px">
+        <h2>Ввод отпуска</h2>
+        <div class="form-group">
+            @Html.LabelFor(m => m.StartDate)
+            <input id="startDate" asp-for="StartDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+            @Html.ValidationMessageFor(m => m.StartDate, "", new { @class = "text-danger" })
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.EndDate)
+            <input id="endDate" asp-for="EndDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+            @Html.ValidationMessageFor(m => m.EndDate, "", new { @class = "text-danger" })
+        </div>
+        
+       <button class="btn btn-primary" type="submit">Отправить</button>
+    </form>
+}
+
+
+@section scripts{
+    <script src="/js/signalr.js"></script>
+    <script src="/js/msgpack5.js"></script>
+    <script src="/js/signalr-protocol-msgpack.js"></script>
+    <script src="/js/webkitSpeechRecognition.js"></script>
+    <script src="/js/LinkedList.js"></script>
+    <script src="/js/voiceFormFiller.js"></script>
+    <script>
+        
+        var recorder;
+        var voiceFormFiller;
+
+        $(function() {
+            recorder = new chromeSpeechRecognititon();
+            recorder.start();
+
+            voiceFormFiller = new VoiceFormFiller(recorder, $("#vocation-form"));
+
+            var startDate = $("#startDate");
+            if (startDate.hasClass("input-validation-error") || startDate.val() == "")
+                voiceFormFiller.addFieldRequest({
+                    text: "Назовите дату начала отпуска",
+                    input: startDate,
+                    type: "date"
+                });
+
+            var endDate = $("#endDate");
+            if (endDate.hasClass("input-validation-error") || endDate.val() == "")
+                voiceFormFiller.addFieldRequest({
+                    text: "Назовите дату окончания отпуска",
+                    input: endDate,
+                    type: "date"
+                });
+            voiceFormFiller.start();
+        });
+
+        var validationUtterance = new SpeechSynthesisUtterance();
+        validationUtterance.rate = 2;
+        $(".field-validation-error").each(function() {
+
+            var me = $(this);
+            var message = "Ошибка валидации поля " +
+                $("label[for='" + me.attr("data-valmsg-for") + "']").text() +
+                ". " +
+                $(this).text();
+            validationUtterance.text = message;
+            speechSynthesis.speak(validationUtterance);
+        });
+    </script>
+}
